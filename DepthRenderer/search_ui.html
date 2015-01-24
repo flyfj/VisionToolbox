@@ -1,0 +1,371 @@
+<html>
+<head>
+    <title>3D Object Search</title>
+    <link rel="stylesheet" href="search.css">
+    <link rel="stylesheet" href="libs/bootstrap/dist/css/bootstrap.min.css">
+    <script href="libs/html2canvas/build/html2canvas.min.js"></script>
+    <script src="libs/jquery/dist/jquery.min.js"></script>
+</head>
+
+<body>
+    <script>
+        // define variables
+        var frame_id = 10;
+        var min_frame_id = frame_id;
+        var max_frame_id = 1840;
+        var cur_frame_fn_color = '';
+        var cur_frame_fn_depth = '';
+        var frame_type_switcher = 1;
+        var video_dir = 'res/proposal_saliency/laptop_cup2/';
+        var model_dir = 'models/';
+        var query_lock = 0;
+        var animate_frame_id = 0;
+        var frame_interval_id = 0;
+        var res_data = new Object;   // frame result dictionary: frame_id -> 2D res array
+        var query_targets = new Array;          // frame_id, obj_id, score
+        var prev_query_targets = new Array;     // on screen queries
+    </script>
+    
+    <script>
+        
+        $(function() {
+            /*
+                function definition
+            */
+            function render_model(container, model_path) {
+                // create a scene - 3D world
+                var scene = new THREE.Scene();
+                var canvas_width = container.width();
+                var canvas_height = container.height();
+                // camera
+                var camera = new THREE.PerspectiveCamera(75, canvas_width / canvas_height, 0.1, 50);
+                //camera.position.set(1000,1000,1000);
+
+                // create object
+                var material = new THREE.MeshDepthMaterial({
+                    color: 0x999999,
+                    wireframe: false,
+                    overdraw: 0.5,
+                    side: THREE.DoubleSide
+                });
+//                var material = new THREE.MeshBasicMaterial({
+//                    color: "rgb(255,255,255)"
+//                });
+
+                // external model loader
+                var manager = new THREE.LoadingManager();
+                manager.onProgress = function ( item, loaded, total ) {
+                    //console.log( item, loaded, total );
+                };
+                var loader = new THREE.OBJLoader(manager);
+                var obj_model;
+                loader.load(model_path, function(object) {
+                    if(object == null) {
+                        console.log('fail to load: ' + model_path);
+                        return;
+                    }
+                   // console.log(object.position);
+                    object.traverse(function(mesh) {
+                        if(mesh instanceof THREE.Mesh) {
+                            mesh.material = material;
+                            mesh.material.needsUpdate = true;
+                        }
+                    });
+                    var scale = 20;
+                    object.scale.set(scale, scale, scale);
+
+                    scene.add(object);
+                });
+                camera.position.z = 30;
+
+                // axis
+                var axisHelper = new THREE.AxisHelper( 5 );
+                scene.add( axisHelper );
+
+                // renderer
+                var renderer;
+                if(window.WebGLRenderingContext)
+                    renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, preserveDrawingBuffer: true});
+                else
+                    renderer = new THREE.CanvasRenderer({alpha: true});
+                renderer.setClearColor('#000', 1);  // bg color
+                renderer.setSize(canvas_width, canvas_height);
+                container.append(renderer.domElement);
+                // start rendering
+                var cnt = 0;
+                var render = function() {
+                    animate_frame_id = requestAnimationFrame(render);
+                    scene.traverse(function(e){
+                        if(e instanceof THREE.Mesh) {
+                            e.rotation.x += 0.01;
+                            e.rotation.y += 0.01;
+                            e.rotation.z += 0.01;
+                        }
+                    });
+
+                    renderer.render(scene, camera);
+                };
+
+                render();
+            }
+
+            function play_frame()  {
+                // next frame
+                // sync will be very slow
+//                $('#video_frame').on('load', function() {
+//                    
+//                });
+                
+                // draw frame
+                var container = document.getElementById('video_frame');
+                cur_frame_color_fn = 'frame_' + frame_id + '.jpg_color.png';
+                cur_frame_depth_fn = 'frame_' + frame_id + '.jpg_depth.png';
+                // switch between color and depth frames
+                var cur_id = (frame_id-min_frame_id) / 5;
+                //console.log("cur frame: " + frame_id);
+                if( cur_id % 5 == 0)
+                    frame_type_switcher = 1 - frame_type_switcher;
+                if(frame_type_switcher == 1)
+                    container.src = video_dir + cur_frame_color_fn;
+                else
+                    container.src = video_dir + cur_frame_depth_fn;
+                
+                // update proposal after interval
+                if((frame_id-min_frame_id) / 5 % 5 == 0)
+                {
+                    //console.log('update proposal: ' + frame_id);
+                    read_frame_proposals(frame_id);
+                    // draw proposals
+                    draw_query_proposals();
+                }
+                // update frame id
+                frame_id = frame_id + 5;
+                if(frame_id > max_frame_id) frame_id = min_frame_id;
+            }
+            
+            function read_frame_proposals(fid) {
+                
+                // if not using dynamic list, then directly get from res_data
+                query_targets = [];
+                for(var i=0; i<res_data[fid].length; i++)
+                    query_targets.push([fid, i]);
+                
+                return;
+                
+                // if use dynamic list, get scored boxes from file
+                var box_file = video_dir + 'frame_' + fid + '.jpg_box.txt';
+                $.get(box_file, function(data){
+                   //console.log(data);
+                    data = data.trim();
+                    var tmp_data = data.split('\n');
+                    //prev_query_targets = query_targets;
+                    query_targets = [];
+                    for(var i=0; i<tmp_data.length; i++) { 
+                        var cur_box = tmp_data[i].split(' ');
+                        query_targets.push([fid, i, cur_box[4]]);
+                    }
+                    // sort queries
+//                    query_targets.sort(function(a, b) { 
+//                        return a[2]>b[2]; 
+                    //});
+                });
+            }
+            
+            function draw_query_proposals() {
+                // wait until images are loaded
+                var $images = $('img.query_item');
+                var loaded_images_count = 0;
+                $images.on('load', function() {
+                    loaded_images_count++;
+                    if (loaded_images_count == $images.length) {
+                        return;
+                    }
+                });
+                
+                // set query image src
+                prev_query_targets = query_targets;
+                for(var i=0; i<Math.min(4, query_targets.length); i++) {
+                    var obj_img = video_dir + 'frame_' + query_targets[i][0] + '.jpg_box_' + query_targets[i][1] + '.png';
+                    $('#query_' + i).html("<img src='" + obj_img + "' style='width:100%; height:100%;'>");
+                }
+                
+            }
+            
+            function draw_search_results(fid, obj_id, use_img) {
+                 
+                clear_render();
+                
+                var cur_res = res_data[fid][obj_id];
+                    //Math.min(res_data.length-1, (fid-min_frame_id)/5*5);
+                //cur_res_line = cur_res_line + obj_id;
+                for(var i=0; i<5; i++) 
+                {
+                    //console.log(cur_res_line);
+                    //console.log(res_data[cur_res_line]);  
+                    if(use_img) {
+                        var cate_name = cur_res[i].split('_')[0];
+                        var cur_model_fn = model_dir + cate_name + "/" + cur_res[i] + "/" + cur_res[i] + '.jpg';
+                        $('#res_' + i).html("<img src='" + cur_model_fn + "' style='width:100%; height:100%;'>");
+                    }
+                    else {
+                        var cur_model_fn = model_dir + 'modelnet_normalized/' + cur_res[i] + '.obj';
+                        render_model($('#res_' + i), cur_model_fn);
+                    }
+                };
+            };
+            
+            function clear_render() {
+                // remove renderer from containers
+                $('.res_item').empty();
+            }
+            
+            // problem: when click, play_frame is also executing, 
+            // query_targets get changed so select the wrong target
+            $('.query_item').click(function() {
+                
+                // show ui
+                if($('#query_target').is(':visible') == false)
+                    $('#query_target').show();
+                if($('#res_list').is(':visible') == false)
+                    $('#res_list').show();
+                
+                //clearInterval(frame_interval_id);
+                // update query
+                var sel_id = $(this).attr('id').split('_')[1];
+                var query_obj = query_targets[sel_id]; //prev_query_targets[sel_id];
+                console.log(query_obj + " " + res_data[query_obj[0]][query_obj[1]]);
+                var obj_img = video_dir + 'frame_' + query_obj[0] + '.jpg_box_' + query_obj[1] + '.png';
+                $('#query_img').html("<img src='" + obj_img + "' style='width:100%; height:100%;'>");
+                // show results
+                //console.log(query_obj[1]);
+                draw_search_results(query_obj[0], query_obj[1], false);
+            });
+            
+            $('#video_frame').click(function(e) {
+               // show windows containing the clicked point
+                // map clicked point to point in the result image
+                var posX = $(this).offset().left;
+                var posY = $(this).offset().top;
+                var img_x = e.pageX - posX;
+                var img_y = e.pageY - posY;
+                
+            });
+            
+            $('#start_btn').click(function(){  
+                
+                $('#ui_layer').show();
+                $('#query_target').hide();
+                $('#res_list').hide();
+                
+                /*
+                    startup scripts
+                */
+                // parse result file
+                max_frame_id = 0;
+                min_frame_id = 10000;
+                $.get('laptop_cup2.txt', function(data){
+                   //console.log(data);
+                    data = data.trim();
+                    var tmp_data = data.split('\n');
+                    for(var i=0; i<tmp_data.length; i++) {
+                        // get request frame
+                        // all results with query
+                        var cur_res_row = tmp_data[i].split(',');
+                        // query decomposition: frame_10.jpg_0
+                        var tmp = cur_res_row[0].split('.');
+                        var fid = tmp[0].trim().split('_')[1];
+                        max_frame_id = Math.max(fid, max_frame_id);
+                        min_frame_id = Math.min(fid, min_frame_id);
+                        if(res_data[fid] == null) 
+                            res_data[fid] = new Array;
+                        // clean res array for each proposal
+                        var cur_res_arr = new Array;
+                        for(var j=1; j<cur_res_row.length; j++) {
+                            cur_res_arr.push(cur_res_row[j].trim());
+                        }
+                        res_data[fid].push(cur_res_arr);
+                    }
+                    
+                    console.log('data loaded.');
+                    frame_id = min_frame_id;
+                    console.log('min id:' + min_frame_id + " max id: " + max_frame_id);
+                });
+                
+                $('#search_btn').prop('disabled', true);
+                
+                //play_frame();
+                frame_interval_id = setInterval(play_frame, 400);
+                
+                // screenshots
+//                html2canvas($("#main_area"), {
+//                    onrendered: function(canvas) {
+//                        // canvas is the final rendered <canvas> element
+//                        var download_link = document.createElement('a');
+//                        download_link.download = '../sample.png';
+//                        download_link.href = canvas.toDataURL("image/png");
+//                        download_link.click();
+//                    }
+//                });
+
+                return;
+                
+                // clear current results
+                clear_render();
+                // show results for current frame object
+                var cur_res_line = Math.min(res_data.length-1, (frame_id-min_frame_id)*5);
+                console.log(cur_res_line);
+                for(var i=1; i<6; i++) {
+                    var cate_name = res_data[cur_res_line][i].split('_')[0];
+                    //console.log(cate_name);
+                    var cur_model_fn = model_dir + res_data[cur_res_line][i].trim() + '.obj';
+                    render_model($('#res_' + i), cur_model_fn);
+                }
+            });
+                  
+            $('#ui_layer').hide();
+            
+        });
+        
+        
+    </script>
+
+
+    <!-- view -->
+    <div class="container" id="mean_area">
+        <img id="video_frame" class="center-block">
+<!--        <canvas id="video_canvas" class="center-block"></canvas>-->
+        <div id="ui_layer">
+            <div style="margin-bottom: 10px;">
+                <div id="query_target">
+                    <h5><b>Query</b></h5>
+                    <div id="query_img"></div>
+                </div>
+                <div id="res_list">
+                    <h5><b>3D Search Results</b></h5>
+                    <div class="res_item" id="res_0"></div>
+                    <div class="res_item" id="res_1"></div>
+                    <div class="res_item" id="res_2"></div>
+                    <div class="res_item" id="res_3"></div>
+                    <div class="res_item" id="res_4"></div>
+                </div>
+            </div>
+            <div id="query_list">
+                <h5><b>Query Suggestions</b></h5>
+                <div class="query_item" id="query_0"></div>
+                <div class="query_item" id="query_1"></div>
+                <div class="query_item" id="query_2"></div>
+                <div class="query_item" id="query_3"></div>
+            </div>
+        </div>
+        
+<!--        <input type="file" id="folder_picker" webkit-directory directory multiple style="margin: 30px auto">-->
+        <button id="start_btn" class="btn btn-primary" style="margin: 30px auto; display: block; width: 100px">Start</button>
+    </div>
+    
+    <!-- scripts -->
+    <script src="libs/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="libs/threejs/build/three.min.js"></script>
+    <script src="libs/OBJLoader.js"></script>
+    
+</body>
+</html>

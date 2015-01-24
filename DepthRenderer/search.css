@@ -1,0 +1,24 @@
+/*
+* {
+    border: solid;
+    border-width: 1px;
+}
+*/
+
+#video_frame {
+    width: 640px;
+    height: 480px;
+}
+
+#ui_layer {
+    position: absolute;
+    top: 30px;
+    left: 550px;
+    z-index = 2;
+}
+
+.res_item {
+    width: 100px;
+    height: 75px;
+    display: inline-block;
+}

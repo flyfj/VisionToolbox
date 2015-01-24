@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Depth View Synthesizer</title>
+    <link rel="shortcut icon" href="">
+    <meta name="description" content="Synthesize 3D model depth views">
+    <script src="libs/threejs/build/three.min.js"></script>
+    <script src="libs/OBJLoader.js"></script>
+    <script src="libs/jquery/dist/jquery.min.js"></script>
+</head>
+
+<body>
+    <script>
+        
+        var is_recording = false;
+        
+        $(function(){
+            
+            // bind button event
+            $('#save_btn').click(function() {
+               is_recording = !is_recording;
+               is_recording? $(this).text('Stop'): $(this).text('Record');
+            });
+            
+            // create a scene - 3D world
+            var scene = new THREE.Scene();
+            
+            var canvas_width = $('#container').width();
+            var canvas_height = $('#container').height();
+            // camera
+            var camera = new THREE.PerspectiveCamera(75, canvas_width / canvas_height, 0.1, 50);
+            //camera.position.set(1000,1000,1000);
+            
+            // create object
+            var material = new THREE.MeshDepthMaterial({
+                color: 0x999999,
+                wireframe: false,
+                overdraw: 0.5,
+                side: THREE.DoubleSide
+            });
+            
+            // external model loader
+            var manager = new THREE.LoadingManager();
+            manager.onProgress = function ( item, loaded, total ) {
+                console.log( item, loaded, total );
+            };
+            var loader = new THREE.OBJLoader(manager);
+            var obj_model;
+            loader.load('models/T-50.obj', function(object){
+                console.log(object.position);
+                object.traverse(function(mesh) {
+                    if(mesh instanceof THREE.Mesh) {
+                        mesh.material = material;
+                        mesh.material.needsUpdate = true;
+                    }
+                });
+                object.scale.set(1.8, 1.8, 1.8);
+                
+                scene.add(object);
+            });
+            camera.position.z = 30;
+            
+            // axis
+            var axisHelper = new THREE.AxisHelper( 5 );
+            scene.add( axisHelper );
+            
+            // renderer
+            var renderer;
+            if(window.WebGLRenderingContext)
+                renderer = new THREE.WebGLRenderer({alpha: true, antialias: true, preserveDrawingBuffer: true});
+            else
+                renderer = new THREE.CanvasRenderer({alpha: true});
+            renderer.setClearColor('#000', 1);
+            renderer.setSize(canvas_width, canvas_height);
+            $('#container').append(renderer.domElement);
+            // start rendering
+            var cnt = 0;
+            var render = function() {
+                requestAnimationFrame(render);
+                scene.traverse(function(e){
+                    if(e instanceof THREE.Mesh) {
+                        e.rotation.x += 0.01;
+                        e.rotation.y += 0.01;
+                        e.rotation.z += 0.01;
+                    }
+                })
+                
+                cnt++;
+                
+                if(is_recording && cnt % 100 == 0) {
+                    var download_link = document.createElement('a');
+                    download_link.download = '../sample.png';
+                    download_link.href = renderer.domElement.toDataURL('image/png');
+                    download_link.click();
+                }
+
+                renderer.render(scene, camera);
+            };
+            
+            render();
+        })
+    </script>
+    
+    <div id="container" style="width:640px; height:480px; margin:auto"></div>
+    <button id="save_btn" type="button" style="width:100px; height:30px; margin:30px auto; display:block">Record</button>
+</body>
+    
+</html>

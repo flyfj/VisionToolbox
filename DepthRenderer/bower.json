@@ -1,0 +1,9 @@
+{
+  "name": "threejs playground",
+  "version": "1.0.0",
+  "dependencies": {
+      "threejs": "latest",
+      "jquery": "latest",
+      "bootstrap": "latest"
+  }
+}
