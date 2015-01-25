@@ -6,10 +6,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CSharpProcessor
+namespace MeshFormatConversion
 {
     // wrapper for converting mesh file format
-    // hard-coded for Priceton shape dataset, but you get the idea
     class MeshConv
     {
         private string executablePath = "meshconv.exe";
@@ -46,6 +45,41 @@ namespace CSharpProcessor
             }
 
             return true;
+        }
+
+        // format: "off", "obj"
+        public void BatchConvertModelNet(string model_list_file, string data_root, string srcFormat, string targetFormat)
+        {
+             // load model files from list file
+            using(StreamReader reader = new StreamReader(model_list_file))
+            {
+                string list_str = reader.ReadToEnd();
+                char[] delimiters = {'\n'};
+                string[] all_fns = list_str.Split(delimiters);
+                foreach (string fn in all_fns)
+                {
+                    string new_fn = fn.TrimEnd(new []{'\r'});
+                    string src_model_fn = data_root + new_fn + "." + srcFormat;
+                    string des_model_fn = data_root + new_fn;
+                    if (File.Exists(des_model_fn + "." + targetFormat))
+                        continue;
+                    Process detector = new Process();
+                    try
+                    {
+                        detector.StartInfo.UseShellExecute = false;
+                        detector.StartInfo.FileName = executablePath;
+                        detector.StartInfo.Arguments = src_model_fn + " -c " + targetFormat + " -tri -o " + des_model_fn;
+                        detector.StartInfo.CreateNoWindow = false;
+                        detector.Start();
+                        detector.WaitForExit();
+                        Console.WriteLine("Converted " + src_model_fn);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+            }
         }
     }
 }

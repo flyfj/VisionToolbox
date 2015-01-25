@@ -1,13 +1,18 @@
 
+addpath('../obj_toolbox/');
 
-model_dir = 'F:\src\models\ModelNetUpsampled\';
-save_dir = 'F:\src\models\modelnet_normalized\';
+model_file = 'F:\3D\ModelNet\model_list.txt';
+model_dir = 'f:\3D\ModelNet\full\';
+save_dir = 'F:\3D\ModelNet\full_normalized\';
 
-fns = dir([model_dir '*.obj']);
+fns = importdata(model_file);
 [m, n] = size(fns);
 
 parfor i=1:m
-    curfn = [model_dir fns(i).name];
+    curfn = [model_dir fns{i,1} '.obj'];
+    if(exist(curfn, 'file') == 0)
+        continue;
+    end
     curmodel = read_wobj(curfn);
     % center
     meanv = mean(curmodel.vertices, 1);
@@ -17,7 +22,8 @@ parfor i=1:m
     max_norm = max(vertex_norms);
     curmodel.vertices = curmodel.vertices ./ max_norm;
     % save back
-    savefn = [save_dir fns(i).name];
+    savefn = [model_dir fns{i,1} '_norm.obj'];
     write_wobj(curmodel, savefn);
+    
     disp(['processed ' curfn]);
 end

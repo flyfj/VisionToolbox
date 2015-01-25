@@ -1,5 +1,7 @@
 *.mat
 libs/
+bin/
+obj/
 
 # Compiled Object files
 *.slo
