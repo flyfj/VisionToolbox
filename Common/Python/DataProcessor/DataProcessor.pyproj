@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0eed2d91-ace8-45f7-907b-1edf693cfcab</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>modelnet_picker.py</StartupFile>
+    <StartupFile>remove_empty_depth.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -29,6 +29,9 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="modelnet_picker.py" />
+    <Compile Include="remove_empty_depth.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />

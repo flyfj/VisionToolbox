@@ -1,4 +1,4 @@
-# select subset from modelnet
+# select subset from downloaded modelnet models
 
 '''
 1. randomly pick 150 categories
