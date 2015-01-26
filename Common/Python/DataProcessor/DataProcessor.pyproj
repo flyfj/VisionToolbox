@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0eed2d91-ace8-45f7-907b-1edf693cfcab</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>remove_empty_depth.py</StartupFile>
+    <StartupFile>depth_view_listing.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
@@ -28,10 +28,10 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="modelnet_picker.py" />
-    <Compile Include="remove_empty_depth.py">
+    <Compile Include="depth_view_listing.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="modelnet_picker.py" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{9a7a9026-48c1-4688-9d5d-e5699d47d074}\2.7" />

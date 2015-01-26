@@ -32,8 +32,8 @@ with open('model_list_nonempty.txt', 'w') as file:
         valid_num = 0
         for idx in range(len(cur_objs)):
             # check if model file exists and is non-empty
-            sel_obj_fn = cur_cate_name + '/' + cur_objs[idx] + '/' + cur_objs[idx]
-            model_fn = model_root + sel_obj_fn + '.off'
+            sel_obj_fn = cur_cate_name + '/' + cur_objs[idx]
+            model_fn = model_root + sel_obj_fn + '/' + cur_objs[idx] + '.off'
             try:
                 if os.path.getsize(model_fn) > 0:
                     file.write(sel_obj_fn + '\n')
