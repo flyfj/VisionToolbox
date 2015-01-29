@@ -2,14 +2,16 @@
 import os
 import glob
 
-root = 'F:/3D/ModelNet/full_depth/'
+root = 'F:/3D/ModelNet/test_db/'
 save_fn = 'F:/3D/ModelNet/depth_view_list.txt'
 
 fns = os.listdir(root)
 with open(save_fn, 'w') as f:
+    # each category
     for cate in fns:
         cur_cate_path = root + cate + '/'
         objs = os.listdir(cur_cate_path)
+        # each object
         for obj in objs:
             obj_dir = cur_cate_path + obj + '/'
             views = os.listdir(obj_dir)

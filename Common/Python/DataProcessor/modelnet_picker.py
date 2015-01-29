@@ -10,15 +10,15 @@ import os
 import random
 import math
 
-model_root = 'F:/3D/ModelNet/full/'
+model_root = 'F:/3D/ModelNet/test_db/'
 
 # get all categories
 cates = os.listdir(model_root)
 print 'total category number: ', len(cates)
 
 # select categories
-sel_cate_num = 150
-sel_cate_ids = random.sample(range(len(cates)), sel_cate_num)
+sel_cate_num = 46
+sel_cate_ids = range(len(cates))  #random.sample(range(len(cates)), sel_cate_num)
 print sel_cate_ids
 
 sel_obj_num = 10
@@ -27,6 +27,7 @@ with open('model_list_nonempty.txt', 'w') as file:
     for cate_id in sel_cate_ids:
         cur_cate_name = cates[cate_id]
         cur_dir = model_root + cur_cate_name + '/'
+        # list all objects
         cur_objs = os.listdir(cur_dir)
         random.shuffle(cur_objs)
         valid_num = 0
@@ -36,7 +37,8 @@ with open('model_list_nonempty.txt', 'w') as file:
             model_fn = model_root + sel_obj_fn + '/' + cur_objs[idx] + '.off'
             try:
                 if os.path.getsize(model_fn) > 0:
-                    file.write(sel_obj_fn + '\n')
+                    write_obj_fn = sel_obj_fn + '/' + cur_objs[idx] + '.off'
+                    file.write(write_obj_fn + '\n')
                     valid_num += 1
                     if valid_num == sel_obj_num:
                         break

@@ -10,18 +10,29 @@ if ~exist('offfn', 'var'); offfn = 'chair000009.off'; end
 p = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(p); parpool('local'); end
 % loop through different rotation angles
-xzrots = linspace(0, pi * 2, 10); xzrotlen = length(xzrots);
+xzrots = linspace(-pi*2, pi * 2, 6); xzrotlen = length(xzrots);
 % yzrots = [0]; yzrotlen = 1;
-yzrots = linspace(-pi / 6, pi / 6, 4); yzrotlen = length(yzrots);
+yzrots = linspace(-pi*2, pi *2, 6); yzrotlen = length(yzrots);
 parfor xzroti = 1: xzrotlen
     for yzroti = 1: yzrotlen
-        count = (xzroti - 1) * length(yzrots) + yzroti; 
+        count = (xzroti - 1) * yzrotlen + yzroti; 
         depth = off2im(offfn, 2, xzrots(xzroti), yzrots(yzroti));
         % normalization
-        depth = depth - min(depth(:));
-        depth = 1 - depth / max(depth(:));
-        [~, fnwoext, ~] = fileparts(offfn);
-        imwrite(depth, sprintf('%s/%s.off_%d_reverse.png', outpath, fnwoext, count));
+        % treat maximum value as invalid
+        sort_dmap = sort(depth(:), 'descend');
+        if length(sort_dmap) < 2
+            continue;
+        end
+        depth(depth==sort_dmap(1)) = 0;
+        depth = depth / sort_dmap(2);
+        % form save file: catename__objname__viewnum.png
+        parts = strsplit(offfn, '/');
+        %[~, fnwoext, ~] = fileparts(offfn);
+        save_fn = sprintf('%s/%s__%s__%d.png', outpath, parts{length(parts)-2}, parts{length(parts)-1}, count);
+        if exist(save_fn, 'file')
+            continue;
+        end
+        imwrite(depth, save_fn);
     end
 end
 
