@@ -13,27 +13,26 @@
     <script>
         
         var is_recording = false;
+        var model_fns = [];
+        var processed_model_num = 0;
+        var thread_num = 5;
         
-        $(function(){
-            
-            // bind button event
-            $('#save_btn').click(function() {
-               is_recording = !is_recording;
-               is_recording? $(this).text('Stop'): $(this).text('Record');
-            });
+        function SynthesizeDepthMap(model_fn) {
+            // remove old view
+            $('#main-view').empty();
             
             // create a scene - 3D world
             var scene = new THREE.Scene();
             
-            var canvas_width = $('#container').width();
-            var canvas_height = $('#container').height();
+            var canvas_width = $('#main-view').width();
+            var canvas_height = $('#main-view').height();
             // camera
-            var camera = new THREE.PerspectiveCamera(75, canvas_width / canvas_height, 0.1, 50);
+            var camera = new THREE.PerspectiveCamera(75, canvas_width / canvas_height, 0.1, 30);
             //camera.position.set(1000,1000,1000);
             
             // create object
             var material = new THREE.MeshDepthMaterial({
-                color: 0x999999,
+                color: 0x333333,
                 wireframe: false,
                 overdraw: 0.5,
                 side: THREE.DoubleSide
@@ -46,7 +45,9 @@
             };
             var loader = new THREE.OBJLoader(manager);
             var obj_model;
-            loader.load('models/T-50.obj', function(object){
+//            var model_fn = 'models/modelnet_normalized/bottle_000000481.obj';
+            $('#model-name').html(model_fn);
+            loader.load(model_fn, function(object){
                 console.log(object.position);
                 object.traverse(function(mesh) {
                     if(mesh instanceof THREE.Mesh) {
@@ -54,15 +55,16 @@
                         mesh.material.needsUpdate = true;
                     }
                 });
-                object.scale.set(1.8, 1.8, 1.8);
-                
+                var scale = 10;
+                object.scale.set(scale, scale, scale);
+
                 scene.add(object);
             });
-            camera.position.z = 30;
+            camera.position.z = 20;
             
             // axis
             var axisHelper = new THREE.AxisHelper( 5 );
-            scene.add( axisHelper );
+            //scene.add( axisHelper );
             
             // renderer
             var renderer;
@@ -72,37 +74,163 @@
                 renderer = new THREE.CanvasRenderer({alpha: true});
             renderer.setClearColor('#000', 1);
             renderer.setSize(canvas_width, canvas_height);
-            $('#container').append(renderer.domElement);
+            $('#main-view').append(renderer.domElement);
             // start rendering
-            var cnt = 0;
-            var render = function() {
-                requestAnimationFrame(render);
-                scene.traverse(function(e){
-                    if(e instanceof THREE.Mesh) {
-                        e.rotation.x += 0.01;
-                        e.rotation.y += 0.01;
-                        e.rotation.z += 0.01;
+            var frame_cnt = 0;
+            var rot_cnt = 0;
+            // generate rotation angels
+            var angels = [];
+            var step = 2*Math.PI/7;
+            for(var x=-Math.PI; x<Math.PI; x+=step) {
+                for(var y=-Math.PI; y<Math.PI; y+=step) {
+                    for(var z=-Math.PI; z<Math.PI; z+=step) {
+                        angels.push([x, y, z]);
                     }
-                })
-                
-                cnt++;
-                
-                if(is_recording && cnt % 100 == 0) {
-                    var download_link = document.createElement('a');
-                    download_link.download = '../sample.png';
-                    download_link.href = renderer.domElement.toDataURL('image/png');
-                    download_link.click();
+                }
+            }
+            var render = function() {
+                if(is_recording)
+                    requestAnimationFrame(render);
+                else {
+                    console.log('end');
+                    return;
                 }
 
-                renderer.render(scene, camera);
+                frame_cnt++;
+                
+                if(is_recording && frame_cnt % 10 == 0) {
+                    // apply rotation
+                    scene.traverse(function(e){
+                        if(e instanceof THREE.Mesh) {
+                            e.rotation.x = angels[rot_cnt][0];
+                            e.rotation.y = angels[rot_cnt][1];
+                            e.rotation.z = angels[rot_cnt][2];
+                            $('#cur-rot').html('current rotation: x: '+ angels[rot_cnt][0] + 
+                                               ', y: ' + angels[rot_cnt][1] + ', z: ' + angels[rot_cnt][2]);
+                            rot_cnt++;
+                        }
+                    });
+                    if(rot_cnt == angels.length) {
+                        // stop downloading
+                        console.log('rotation finished.');
+                        is_recording = false;
+                    }
+                    // render
+                    renderer.render(scene, camera);
+                    // transform to normal depth format: closer->darker, farther->brighter
+                    var cur_img = new Image();
+                    cur_img.onload = function() {
+//                        console.log(cur_img.width + ',' + cur_img.height);
+                        var canvas = document.getElementById('new-canvas');
+                        var canvas_cxt = canvas.getContext('2d');
+                        canvas_cxt.drawImage(cur_img, 0, 0, cur_img.width, cur_img.height);
+                        var img_data = canvas_cxt.getImageData(0, 0, cur_img.width, cur_img.height);
+                        // change black pixel to red
+                        for(var id=0; id<img_data.data.length/4; id++) {
+                            if(img_data.data[id*4]==0 && img_data.data[id*4+1]==0 && img_data.data[id*4+2]==0) {
+                                continue;
+                            }
+                            img_data.data[4*id] = 255 - img_data.data[4*id];
+                            img_data.data[4*id+1] = 255 - img_data.data[4*id+1];
+                            img_data.data[4*id+2] = 255 - img_data.data[id*4+2];
+                        }
+                        canvas_cxt.putImageData(img_data, 0, 0);
+                    };
+                    cur_img.src = renderer.domElement.toDataURL('image/png');
+                    
+                    // download
+                    var download_link = document.createElement('a');
+                    var fn_str = model_fn.split('/');
+                    var cate_name = fn_str[fn_str.length-3].trim();
+                    // raw image
+                    download_link.download = cate_name + '__' + fn_str[fn_str.length-1].trim() + '_' + rot_cnt + '.png';
+                    download_link.href = renderer.domElement.toDataURL('image/png');
+                    //download_link.click();
+                    
+                    // reversed image
+                    download_link.download = cate_name + '__' + fn_str[fn_str.length-1].trim() + '_' + rot_cnt + '_rev.png';
+                    download_link.href = $('#new-canvas')[0].toDataURL('image/png');
+                    download_link.click();
+                }
+                else {
+                    renderer.render(scene, camera);
+                }
+                
             };
             
             render();
+        }
+        
+        function shuffle(o){ //v1.0
+            for(var j, x, i = o.length; i; j = Math.floor(Math.random() * i), x = o[--i], o[i] = o[j], o[j] = x);
+            return o;
+        };
+        
+        function batch_process(batch_id) {
+            var model_dir = 'ModelNet/full/';
+            var ids = [];
+            var batch_num = model_fns.length / thread_num;
+            var start_id = 0;//batch_num*batch_id;
+            var end_id = model_fns.length; //Math.min(model_fns.length, batch_num*(batch_id+1));
+            for(var i=start_id; i<end_id; i++) {
+                ids.push(i);
+            }
+            //ids = shuffle(ids);
+            
+            var interval_id = setInterval(function(){
+                // check if recording
+                if(!is_recording && processed_model_num < ids.length) 
+                {
+                    console.log(processed_model_num + '/' + ids.length);
+                    is_recording = !is_recording;
+                    var cur_model_fn = model_dir + model_fns[ids[processed_model_num]] + '_norm.obj';
+                   // $.get(cur_model_fn).done(function() { 
+                        // exists code
+                        SynthesizeDepthMap(cur_model_fn);
+                        processed_model_num++;
+//                        }).fail(function() { 
+//                        // not exists code
+//                        console.log('model not found.');
+//                    });
+                    
+                    if(processed_model_num == ids.length)
+                        clearInterval(interval_id);
+                }
+            }, 1000);
+                
+        }
+        
+        $(function(){
+            
+            $.get('/ModelNet/model_list.txt', function(data){
+                model_fns = data.split('\n');
+            });
+            
+            // bind button event
+            $('#start-btn').click(function() {
+//               is_recording = !is_recording;
+//                if(is_recording) {
+//                    $(this).text('Stop');
+//                    batch_process();
+//                }
+//                else {
+//                    $(this).text('Start');
+//                }
+                batch_process(0);
+                
+            });
         })
     </script>
     
-    <div id="container" style="width:640px; height:480px; margin:auto"></div>
-    <button id="save_btn" type="button" style="width:100px; height:30px; margin:30px auto; display:block">Record</button>
+    
+    <div id="main-view" style="width:640px; height:480px; margin:auto; display: inline-block">
+    </div>
+    <div style="margin:0 auto; display: inline-block">
+        <canvas id="new-canvas" width="640px" height="480px"></canvas>
+    </div>
+    <h2 id="model-name"></h2>
+    <h2 id="cur-rot"></h2>
+    <button id="start-btn" type="button" style="width:100px; height:30px; margin:30px auto; display:block">Start</button>
 </body>
     
 </html>
