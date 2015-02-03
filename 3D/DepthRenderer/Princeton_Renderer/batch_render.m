@@ -1,7 +1,7 @@
 
 % batch render depth views from models
-data_root = '/mnt/hgfs/DataHouse/3D/ModelNet/test_db/';
-res_dir = '/mnt/hgfs/DataHouse/3D/ModelNet/test_db_depth/';
+data_root = '/mnt/hgfs/DataHouse/3D/ModelNet/full/';
+res_dir = '/mnt/hgfs/DataHouse/3D/ModelNet/test_db_depth2/';
 model_list = 'model_list_nonempty.txt';
 
 fns = importdata(model_list);

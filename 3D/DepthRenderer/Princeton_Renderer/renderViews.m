@@ -10,9 +10,9 @@ if ~exist('offfn', 'var'); offfn = 'chair000009.off'; end
 p = gcp('nocreate'); % If no pool, do not create new one.
 if isempty(p); parpool('local'); end
 % loop through different rotation angles
-xzrots = linspace(-pi*2, pi * 2, 6); xzrotlen = length(xzrots);
+xzrots = linspace(-pi*2, pi*2, 10); xzrotlen = length(xzrots);
 % yzrots = [0]; yzrotlen = 1;
-yzrots = linspace(-pi*2, pi *2, 6); yzrotlen = length(yzrots);
+yzrots = linspace(-pi*2, pi*2, 10); yzrotlen = length(yzrots);
 parfor xzroti = 1: xzrotlen
     for yzroti = 1: yzrotlen
         count = (xzroti - 1) * yzrotlen + yzroti; 

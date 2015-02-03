@@ -28,7 +28,13 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="depth_search_query.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="depth_view_listing.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="gen_caffe_imgs.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="modelnet_picker.py" />
