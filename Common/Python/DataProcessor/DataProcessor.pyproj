@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>0eed2d91-ace8-45f7-907b-1edf693cfcab</ProjectGuid>
     <ProjectHome>.</ProjectHome>
-    <StartupFile>gen_caffe_imgs.py</StartupFile>
+    <StartupFile>modelnet_picker.py</StartupFile>
     <SearchPath>
     </SearchPath>
     <WorkingDirectory>.</WorkingDirectory>

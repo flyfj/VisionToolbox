@@ -20,7 +20,7 @@ cates = os.listdir(model_root)
 print 'total category number: ', len(cates)
 
 # select categories
-sel_cate_num = 46
+sel_cate_num = 15
 random.shuffle(cates)
 for cur_cate in cates:
     if cur_cate not in sel_cate_list:
@@ -28,7 +28,7 @@ for cur_cate in cates:
         if len(sel_cate_list) == sel_cate_num:
             break
 
-sel_obj_num = 20
+sel_obj_num = 5
 with open('model_list_nonempty.txt', 'w') as file:
     # select objects and save to file
     for cur_cate_name in sel_cate_list:
