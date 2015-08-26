@@ -1,2 +1,1 @@
-# 3DModelToolbox
-a set of tools for processing 3D mesh models
+# common utilies for computer vision and machine learning
