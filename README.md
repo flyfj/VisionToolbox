@@ -1,1 +1,1 @@
-# common utilies for computer vision and machine learning
+# common utilities for computer vision and machine learning
