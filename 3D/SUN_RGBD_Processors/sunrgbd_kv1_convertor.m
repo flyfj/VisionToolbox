@@ -1,5 +1,8 @@
-img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\kv1\NYUdata\';
-save_dir = 'F:\Depth\SUN_RGBD\Separated\Kinect1\NYU2\';
+function sunrgbd_kv1_convertor(img_dir, save_dir)
+% process nyu2 and b3d
+
+% img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\kv1\NYUdata\';
+% save_dir = 'F:\Depth\SUN_RGBD\Separated\Kinect1\NYU2\';
 
 cate_name_counts = containers.Map();
 imgs = dir([img_dir '*']);
@@ -54,4 +57,6 @@ for i=1:length(imgs)
     end
     
     fprintf('%d/%d done.\n', i, length(imgs));
+end
+
 end

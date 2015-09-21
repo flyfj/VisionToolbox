@@ -1,5 +1,7 @@
-img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\realsense\lg\';
-save_dir = 'F:\Depth\SUN_RGBD\Separated\realsense\lg\';
+function sunrgbd_realsense_convertor(img_dir, save_dir)
+
+% img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\realsense\lg\';
+% save_dir = 'F:\Depth\SUN_RGBD\Separated\realsense\lg\';
 
 % there are duplicate image names in different folders,
 % need to rename each image
@@ -62,3 +64,5 @@ end
 %%
 save([save_dir 'shr_data_cates.mat'], 'cate_name_counts');
 fprintf('conversion ends. category names and counts are saved in file.\n');
+
+end

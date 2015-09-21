@@ -1,3 +1,5 @@
+function rgbd_saliency_convertor(img_dir, depth_dir, gt_dir, save_dir)
+
 img_dir = 'F:\Depth\RGBD_Saliency\RGB\';
 depth_dir = 'F:\Depth\RGBD_Saliency\Depth\smoothedDepth\';
 gt_dir = 'F:\Depth\RGBD_Saliency\groundtruth\';
@@ -42,3 +44,4 @@ for i=1:length(imgs)
     fprintf('%d/%d done.\n', i, length(imgs));
 end
 
+end

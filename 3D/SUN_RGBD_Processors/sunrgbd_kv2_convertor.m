@@ -1,5 +1,7 @@
-img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\kv2\align_kv2\';
-save_dir = 'F:\Depth\SUN_RGBD\Separated\Kinect2\align_kv2\';
+function sunrgbd_kv2_convertor(img_dir, save_dir)
+
+% img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\kv2\align_kv2\';
+% save_dir = 'F:\Depth\SUN_RGBD\Separated\Kinect2\align_kv2\';
 
 % there are duplicate image names in different folders,
 % need to rename each image
@@ -62,3 +64,5 @@ end
 %%
 %save([save_dir 'kv2_data_cates.mat'], 'cate_name_counts');
 fprintf('conversion ends. category names and counts are saved in file.\n');
+
+end
