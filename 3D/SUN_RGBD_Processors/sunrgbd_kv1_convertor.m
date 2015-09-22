@@ -20,7 +20,7 @@ for i=1:length(imgs)
     save_fn = [cur_save_dir fn '_color.png'];
     copyfile(cimg_fn, save_fn);
     % copy and convert depth image
-    depth_fn = [img_dir folder '\depth_bfx\' fn '.png'];
+    depth_fn = [img_dir folder '\depth_bfx\' fn '_abs.png'];
     depth = imread(depth_fn);
     depth = double(depth) ./ 10;
     save_fn = [cur_save_dir fn '_depthnew.png'];
