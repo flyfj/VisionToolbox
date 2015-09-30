@@ -1,28 +1,26 @@
-function sunrgbd_kv1_convertor(img_dir, save_dir)
-% process nyu2 and b3d
+function osd_convertor( root_dir, save_dir )
+%OSD_CONVERTOR Summary of this function goes here
+%   Detailed explanation goes here
 
-% img_dir = 'F:\Depth\SUN_RGBD\SUNRGBD\SUNRGBD\kv1\NYUdata\';
-% save_dir = 'F:\Depth\SUN_RGBD\Separated\Kinect1\NYU2\';
+img_dir = [root_dir 'image_color\'];
+depth_dir = [root_dir 'disparity\'];
+gt_dir = [root_dir 'annotation\'];
 
 cate_name_counts = containers.Map();
-imgs = dir([img_dir '*']);
-imgs(1:3) = [];
+imgs = dir([img_dir '*.png']);
 for i=1:length(imgs)
     folder = imgs(i).name;
-    % find image name
-    tmp = dir([img_dir folder '\image\*.jpg']);
-    fn = tmp(1).name(1:end-4);
+    fn = folder(1:end-4);
     % create image folder
     mkdir(save_dir, fn);
     cur_save_dir = [save_dir fn '\'];
     % copy color image
-    cimg_fn = [img_dir folder '\image\' fn '.jpg'];
+    cimg_fn = [img_dir folder];
     save_fn = [cur_save_dir fn '_color.png'];
     copyfile(cimg_fn, save_fn);
     % copy and convert depth image
-    depth_fn = [img_dir folder '\depth_bfx\' fn '_abs.png'];
+    depth_fn = [depth_dir folder];
     depth = imread(depth_fn);
-    depth = double(depth) ./ 10;
     save_fn = [cur_save_dir fn '_depthnew.png'];
     copyfile(depth_fn, save_fn);
     % convert depth and save
@@ -31,15 +29,19 @@ for i=1:length(imgs)
         save_dmap(depth, save_fn);
     end
     % save ground truth. mask file naming: imgname__category__num__mask.png
-    gt = load([img_dir folder '\seg.mat']);
+    gt = imread([gt_dir folder]);
+    ids = unique(gt(:));
     cnt = 0;
-    for j=1:length(gt.names)
-        catename = gt.names{j};
-        catename(~isletter(catename)) = [];
-        mask = gt.seglabel==j;
+    for j=1:length(ids)
+        % remove background
+        if ids(j) == 0
+            continue;
+        end
+        mask = gt==ids(j);
         if(sum(mask(:)) == 0)
             continue;
         end
+        catename = 'any';
         % separate each disjoint region as a unique object instance
         cc = bwconncomp(mask);
         for k=1:cc.NumObjects
@@ -47,10 +49,10 @@ for i=1:length(imgs)
             cur_mask = zeros(size(mask));
             cur_mask(cc.PixelIdxList{k}) = 1;
             % count category object
-            if ~isKey(cate_name_counts, catename)
-                cate_name_counts(catename) = 0;
-            end
-            cate_name_counts(catename) = cate_name_counts(catename) + 1;
+%             if ~isKey(cate_name_counts, catename)
+%                 cate_name_counts(catename) = 0;
+%             end
+            %cate_name_counts(catename) = cate_name_counts(catename) + 1;
             imwrite(cur_mask, save_fn, 'png');
             cnt = cnt + 1;
         end
@@ -59,4 +61,6 @@ for i=1:length(imgs)
     fprintf('%d/%d done.\n', i, length(imgs));
 end
 
+
 end
+
