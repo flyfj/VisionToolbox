@@ -1,9 +1,8 @@
-function rgbd_saliency_convertor(img_dir, depth_dir, gt_dir, save_dir)
+function rgbd_saliency_convertor(root_dir, save_dir)
 
-img_dir = 'F:\Depth\RGBD_Saliency\RGB\';
-depth_dir = 'F:\Depth\RGBD_Saliency\Depth\smoothedDepth\';
-gt_dir = 'F:\Depth\RGBD_Saliency\groundtruth\';
-save_dir = 'F:\Depth\RGBD_Saliency\converted\';
+img_dir = [root_dir 'RGB\'];
+depth_dir = [root_dir 'Depth\smoothedDepth\'];
+gt_dir = [root_dir 'groundtruth\'];
 
 imgs = dir([img_dir '*.jpg']);
 for i=1:length(imgs)
