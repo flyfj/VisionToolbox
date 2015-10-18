@@ -36,6 +36,10 @@ for i=1:length(imgs)
         save_fn = sprintf('%s%s__any__%d__mask.png', cur_save_dir, fn, cnt);
         cur_mask = zeros(size(gt));
         cur_mask(cc.PixelIdxList{k}) = 1;
+        % remove very small regions, e.g. noise
+        if sum(cur_mask(:)) < length(cur_mask(:)) * 0.01
+            continue;
+        end
         imwrite(cur_mask, save_fn, 'png');
         cnt = cnt + 1;
     end
