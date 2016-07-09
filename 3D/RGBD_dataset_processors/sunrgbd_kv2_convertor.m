@@ -8,7 +8,7 @@ function sunrgbd_kv2_convertor(img_dir, save_dir)
 cate_name_counts = containers.Map();
 imgs = dir([img_dir '*']);
 imgs(1:3) = [];
-for i=1:length(imgs)
+for i=870:length(imgs)
     folder = imgs(i).name;
     % find image file
     tmp = dir([img_dir folder '\image\*.jpg']);
@@ -48,6 +48,9 @@ for i=1:length(imgs)
             save_fn = sprintf('%s%s__%s__%d__mask.png', cur_save_dir, fn, catename, cnt);
             cur_mask = zeros(size(mask));
             cur_mask(cc.PixelIdxList{k}) = 1;
+            if(sum(cur_mask(:)) < 100)
+                continue;
+            end
             % count category object
             if ~isKey(cate_name_counts, catename)
                 cate_name_counts(catename) = 0;
